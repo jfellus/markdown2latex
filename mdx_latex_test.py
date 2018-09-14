@@ -36,7 +36,7 @@ $$ \\sum_{i}^{\\infty} x^{n} + y^{n} = \\alpha +  \\beta * z^{n} $$
 A paragraph with a[^fn1] footnote in it[^fn1].
 
 [^fn1]: a very dull footnote indeed
-       
+
        but it does have mutiple paragraphs.
 
 A table now (this is *really* complicated):
@@ -65,7 +65,7 @@ Now let's try having an image:
 Stuff we should escape A&R, a %tage sign
 
     Now some preformatted text:
-    
+
       $ sudo python ...
 '''
     expected = \
@@ -146,7 +146,7 @@ Now some preformatted text:
 
   \\$ sudo python ...
 \\end{verbatim}'''
-    md = markdown.Markdown(None)
+    md = markdown.Markdown()
 
     def test_1(self):
         ltx = mdx_latex.makeExtension()
@@ -157,23 +157,23 @@ Now some preformatted text:
         outlines = out.split('\n')
         explines = self.expected.split('\n')
         # TODO: this misses stuff if out > exp
-        print '******** EXPECTED *********'
-        print self.expected
-        print '******** ACTUAL *********'
-        print out
-        print '******** ANALYSIS *********'
+        print ('******** EXPECTED *********')
+        print (self.expected)
+        print ('******** ACTUAL *********')
+        print (out)
+        print ('******** ANALYSIS *********')
         for ii in range(len(explines)):
             if outlines[ii] != explines[ii]:
-                print ii
-                print 'out:', '"%s"' % outlines[ii]
-                print 'exp:', '"%s"' % explines[ii]
+                print(ii)
+                print( 'out:', '"%s"' % outlines[ii])
+                print('exp:', '"%s"' % explines[ii])
         if len(explines) < len(outlines):
-            print 'Out longer than expected:'
-            print outlines[len(explines):]
+            print('Out longer than expected:')
+            print(outlines[len(explines):])
         # for ii in range(len(out)):
         #    if out[ii] != self.expected[ii]:
         #        print out[ii:ii+10]
-        assert out == self.expected 
+        assert out == self.expected
 
 class TestEscapeLatexEntities:
 
@@ -190,7 +190,7 @@ Now for ```Something a little' more complicated''. ``And again.''
 
     def test_1(self):
         out = mdx_latex.escape_latex_entities(self.in1)
-        print out
+        print(out)
         assert out == self.exp1
         # for ii in range(len(out)):
         #    print ii
@@ -235,8 +235,8 @@ class TestTable2Latex:
         converter = mdx_latex.Table2Latex()
         out = converter.convert(self.intable1)
         ss = unicode(self.exp1)
-        print out
-        print ss
+        print(out)
+        print(ss)
         assert out == ss
 
 class TestMathConvert:
@@ -274,7 +274,7 @@ W & = & y + z \\\\
     def test_1(self):
         converter = mdx_latex.MathTextPostProcessor()
         out = converter.run(self.intext)
-        print out
+        print(out)
         assert out == self.outtext
 
 class TestImgConvert:
@@ -294,5 +294,9 @@ class TestImgConvert:
     def test_1(self):
         converter = mdx_latex.Img2Latex()
         out = converter.convert(self.intext)
-        print out
+        print(out)
         assert out == self.exp1
+
+
+m = TestMkdn2Latex()
+m.test_1()

@@ -76,7 +76,7 @@ import urllib.parse
 import http.client
 import os
 import tempfile
-import urllib
+import urllib.parse
 
 
 PREAMBLE = """
@@ -143,8 +143,8 @@ class LaTeXExtension(markdown.Extension):
                 self.md.inlinePatterns.pop(key)
                 break
 
-        #footnote_extension = FootnoteExtension()
-        #footnote_extension.extendMarkdown(md, md_globals)
+        footnote_extension = FootnoteExtension()
+        footnote_extension.extendMarkdown(md, md_globals)
 
         latex_tp = LaTeXTreeProcessor()
         math_pp = MathTextPostProcessor()
@@ -482,8 +482,8 @@ class Img2Latex(object):
         img = dom.documentElement
         src = img.getAttribute('src')
 
-        if urlparse(src).scheme != '':
-            src_urlparse = urlparse(src)
+        if urllib.parse.urlparse(src).scheme != '':
+            src_urlparse = urllib.parse.urlparse(src)
             conn = httplib.HTTPConnection(src_urlparse.netloc)
             conn.request('HEAD', src_urlparse.path)
             response = conn.getresponse()
@@ -580,7 +580,6 @@ class FootnoteExtension (markdown.Extension):
                               '_begin')
 
     def reset(self):
-        self.used_footnotes = {}
         self.footnotes = {}
 
     def setFootnote(self, id, text):
@@ -592,8 +591,9 @@ class FootnotePreprocessor:
         self.footnotes = footnotes
 
     def run(self, lines):
-        self.blockGuru = BlockGuru()
         lines = self._handleFootnoteDefinitions(lines)
+
+        print("LINES WITHOUT FOOTNOTES\n" + "\n".join(lines) + "\n---------\n")
 
         # Make a hash of all footnote marks in the text so that we
         # know in what order they are supposed to appear.  (This
@@ -602,47 +602,41 @@ class FootnotePreprocessor:
 
         text = "\n".join(lines)
         self.footnotes.SHORT_USE_RE.sub(self.recordFootnoteUse, text)
-
         return text.split("\n")
 
     def recordFootnoteUse(self, match):
         id = match.group(1)
         id = id.strip()
-        nextNum = len(self.footnotes.used_footnotes.keys()) + 1
-        self.footnotes.used_footnotes[id] = nextNum
 
     def _handleFootnoteDefinitions(self, lines):
-        """Recursively finds all footnote definitions in the lines.
+        """Recursively finds and remove all footnote definitions in the lines.
 
             @param lines: a list of lines of text
             @returns: a string representing the text with footnote
                       definitions removed """
 
-        i, id, footnote = self._findFootnoteDefinition(lines)
+        iStart, iEnd, id, footnote = self._findFootnoteDefinition(lines)
+
+        print("J'ai %s à (%i,%i)" % (id,iStart,iEnd))
 
         if id:
-
-            plain = lines[:i]
-
-            detabbed, theRest = self.blockGuru.detectTabbed(lines[i + 1:])
-
-            self.footnotes.setFootnote(id,
-                                       footnote + "\n"
-                                       + "\n".join(detabbed))
-
-            more_plain = self._handleFootnoteDefinitions(theRest)
-            return plain + [""] + more_plain
-
+            self.footnotes.setFootnote(id, footnote + "\n" + "\n".join(lines[iStart+1:iEnd]))
+            more_plain = self._handleFootnoteDefinitions(lines[iEnd+1:])
+            return lines[:iStart] + [""] + more_plain
         else:
             return lines
 
     def _findFootnoteDefinition(self, lines):
+        iStart, id, footnote = self._findFootnoteStart(lines)
+        iEnd = self._findFootnoteEnd(lines[iStart:])
+        return iStart, iStart + iEnd, id, footnote
+
+    def _findFootnoteStart(self, lines):
         """Finds the first line of a footnote definition.
 
             @param lines: a list of lines of text
             @returns: the index of the line containing a footnote definition.
         """
-
         counter = 0
         for line in lines:
             m = self.footnotes.DEF_RE.match(line)
@@ -651,6 +645,19 @@ class FootnotePreprocessor:
             counter += 1
         return counter, None, None
 
+    def _findFootnoteEnd(self, lines):
+        """Finds the last line of a footnote definition (empty line or end of lines)
+
+            @param lines: a list of lines of text
+            @returns: the index of the last line
+        """
+        iEnd = 0
+        for line in lines:
+            if not line:
+                return iEnd
+            iEnd = iEnd + 1
+        return -1
+
 
 class FootnotePattern(markdown.inlinepatterns.Pattern):
 
@@ -658,12 +665,13 @@ class FootnotePattern(markdown.inlinepatterns.Pattern):
         markdown.inlinepatterns.Pattern.__init__(self, pattern)
         self.footnotes = footnotes
 
-    def handleMatch(self, m, doc):
-        sup = doc.createElement('sup')
+    def handleMatch(self, m):
+        sup = markdown.util.etree.Element('sup')
         id = m.group(2)
-        # stick the footnote text in the sup
-        self.footnotes.md._processSection(sup,
-                                          self.footnotes.footnotes[id].split("\n"))
+        try:
+            sup.text = self.footnotes.footnotes[id]
+        except:
+            pass
         return sup
 
 
@@ -675,6 +683,7 @@ def template(template_fo, latex_to_insert):
     # has_title_stuff = False
     # for it in title_items:
     #    has_title_stuff = has_title_stuff or (it in tmpl)
+
 
 
 def main():

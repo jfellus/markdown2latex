@@ -147,7 +147,7 @@ class LaTeXExtension(markdown.Extension):
         footnote_extension.extendMarkdown(md, md_globals)
 
         latex_tp = LaTeXTreeProcessor()
-        math_pp = MathTextPostProcessor()
+#        math_pp = MathTextPostProcessor()
         table_pp = TableTextPostProcessor()
         image_pp = ImageTextPostProcessor()
         link_pp = LinkTextPostProcessor()
@@ -156,7 +156,7 @@ class LaTeXExtension(markdown.Extension):
 
         md.treeprocessors['latex'] = latex_tp
         md.postprocessors['unescape_html'] = unescape_html_pp
-        md.postprocessors['math'] = math_pp
+#        md.postprocessors['math'] = math_pp
         md.postprocessors['image'] = image_pp
         md.postprocessors['table'] = table_pp
         md.postprocessors['link'] = link_pp
@@ -593,8 +593,6 @@ class FootnotePreprocessor:
     def run(self, lines):
         lines = self._handleFootnoteDefinitions(lines)
 
-        print("LINES WITHOUT FOOTNOTES\n" + "\n".join(lines) + "\n---------\n")
-
         # Make a hash of all footnote marks in the text so that we
         # know in what order they are supposed to appear.  (This
         # function call doesn't really substitute anything - it's just
@@ -616,8 +614,6 @@ class FootnotePreprocessor:
                       definitions removed """
 
         iStart, iEnd, id, footnote = self._findFootnoteDefinition(lines)
-
-        print("J'ai %s à (%i,%i)" % (id,iStart,iEnd))
 
         if id:
             self.footnotes.setFootnote(id, footnote + "\n" + "\n".join(lines[iStart+1:iEnd]))

@@ -87,6 +87,10 @@ PREAMBLE = """
 """
 
 
+
+
+
+
 start_single_quote_re = re.compile("(^|\s|\")'")
 start_double_quote_re = re.compile("(^|\s|'|`)\"")
 end_double_quote_re = re.compile("\"(,|\.|\s|$)")
@@ -125,15 +129,19 @@ def unescape_latex_entities(text):
     return out
 
 
-def makeExtension(configs=None):
-    return LaTeXExtension(configs=configs)
+def makeExtension(**kwargs):
+    return LaTeXExtension(**kwargs)
 
 
 class LaTeXExtension(markdown.Extension):
-    def __init__(self, configs=None):
+    def __init__(self, **kwargs):
         self.reset()
+        self.config = {"docpath":[".", "path to latex sources"]}
+        super(LaTeXExtension, self).__init__(**kwargs)
+
 
     def extendMarkdown(self, md, md_globals):
+        global PREAMBLE
         self.md = md
 
         # remove escape pattern -- \\(.*) -- as this messes up any embedded
@@ -168,6 +176,26 @@ class LaTeXExtension(markdown.Extension):
 class LaTeXPostProcessor(markdown.postprocessors.Postprocessor):
     def run(self, text):
         """Remove the <root></root>tags and surround with preamble"""
+        try:
+            with open("/etc/remarkable/preamble.tex", 'r') as f:
+                PREAMBLE = f.read()
+        except:
+            pass
+        try:
+            with open("~/.remarkable/preamble.tex", 'r') as f:
+                PREAMBLE = f.read()
+        except:
+            pass
+        try:
+            with open("./preamble.tex", 'r') as f:
+                PREAMBLE = f.read()
+        except:
+            pass
+        try:
+            with open(self.getConfig('docpath') + "/preamble.tex") as f:
+                PREAMBLE = f.read()
+        except:
+            pass
         return PREAMBLE + text[6:-7] + '\end{document}'
 
 class LaTeXTreeProcessor(markdown.treeprocessors.Treeprocessor):
@@ -593,8 +621,6 @@ class FootnotePreprocessor:
     def run(self, lines):
         lines = self._handleFootnoteDefinitions(lines)
 
-        print("LINES WITHOUT FOOTNOTES\n" + "\n".join(lines) + "\n---------\n")
-
         # Make a hash of all footnote marks in the text so that we
         # know in what order they are supposed to appear.  (This
         # function call doesn't really substitute anything - it's just
@@ -616,8 +642,6 @@ class FootnotePreprocessor:
                       definitions removed """
 
         iStart, iEnd, id, footnote = self._findFootnoteDefinition(lines)
-
-        print("J'ai %s à (%i,%i)" % (id,iStart,iEnd))
 
         if id:
             self.footnotes.setFootnote(id, footnote + "\n" + "\n".join(lines[iStart+1:iEnd]))
@@ -709,7 +733,7 @@ def main():
     infile = open(inpath)
 
     md = markdown.Markdown()
-    mkdn2latex = LaTeXExtension()
+    mkdn2latex = LaTeXExtension(docpath=os.path.dirname(inpath))
     mkdn2latex.extendMarkdown(md, markdown.__dict__)
     out = md.convert(infile.read())
 

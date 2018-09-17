@@ -155,7 +155,7 @@ class LaTeXExtension(markdown.Extension):
         footnote_extension.extendMarkdown(md, md_globals)
 
         latex_tp = LaTeXTreeProcessor()
-        math_pp = MathTextPostProcessor()
+#        math_pp = MathTextPostProcessor()
         table_pp = TableTextPostProcessor()
         image_pp = ImageTextPostProcessor()
         link_pp = LinkTextPostProcessor()
@@ -164,7 +164,7 @@ class LaTeXExtension(markdown.Extension):
 
         md.treeprocessors['latex'] = latex_tp
         md.postprocessors['unescape_html'] = unescape_html_pp
-        md.postprocessors['math'] = math_pp
+#        md.postprocessors['math'] = math_pp
         md.postprocessors['image'] = image_pp
         md.postprocessors['table'] = table_pp
         md.postprocessors['link'] = link_pp

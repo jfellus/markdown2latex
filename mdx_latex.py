@@ -141,8 +141,9 @@ class LaTeXExtension(markdown.Extension):
 
 
     def extendMarkdown(self, md, md_globals):
-        global PREAMBLE
         self.md = md
+
+        md.registerExtension(self)
 
         # remove escape pattern -- \\(.*) -- as this messes up any embedded
         # math and we don't need to escape stuff any more for html
@@ -176,6 +177,7 @@ class LaTeXExtension(markdown.Extension):
 class LaTeXPostProcessor(markdown.postprocessors.Postprocessor):
     def run(self, text):
         """Remove the <root></root>tags and surround with preamble"""
+        global PREAMBLE
         try:
             with open("/etc/remarkable/preamble.tex", 'r') as f:
                 PREAMBLE = f.read()
@@ -510,6 +512,9 @@ class Img2Latex(object):
         img = dom.documentElement
         src = img.getAttribute('src')
 
+        if os.path.splitext(src)[1] == ".svg":
+            src = os.path.splitext(src)[0] + ".pdf"
+
         if urllib.parse.urlparse(src).scheme != '':
             src_urlparse = urllib.parse.urlparse(src)
             conn = httplib.HTTPConnection(src_urlparse.netloc)
@@ -525,9 +530,9 @@ class Img2Latex(object):
 	# Using graphicx and ajustbox package for *max width*
         out = \
             """
-            \\begin{figure}[H]
+            \\begin{figure}[h]
             \\centering
-            \\includegraphics[max width=\\linewidth]{%s}
+            \\includegraphics[width=\\linewidth]{%s}
             \\caption{%s}
             \\end{figure}
             """ % (src, alt)
@@ -725,14 +730,23 @@ def main():
     parser.add_option('-t', '--template', dest='template',
                       default='',
                       help='path to latex template file (optional)')
+    parser.add_option('-e', '--extensions', dest='extensions',
+                      default="",
+                      help='path to latex template file (optional)')
     (options, args) = parser.parse_args()
+
     if not len(args) > 0:
         parser.print_help()
         sys.exit(1)
     inpath = args[0]
     infile = open(inpath)
 
-    md = markdown.Markdown()
+    if not options.extensions:
+        options.extensions = []
+    else:
+        options.extensions = options.extensions.split(",")
+
+    md = markdown.Markdown(extensions=options.extensions)
     mkdn2latex = LaTeXExtension(docpath=os.path.dirname(inpath))
     mkdn2latex.extendMarkdown(md, markdown.__dict__)
     out = md.convert(infile.read())

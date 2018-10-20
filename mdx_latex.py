@@ -281,7 +281,10 @@ class LaTeXTreeProcessor(markdown.treeprocessors.Treeprocessor):
             buffer += '\n%s\n' % subcontent.strip()
         # Footnote processor inserts all of the footnote in a sup tag
         elif ournode.tag == 'sup':
-            buffer += '\\footnote{%s}' % subcontent.strip()
+            if subcontent.strip().startswith("\\#"):
+                buffer += '\\cite{%s}' % subcontent.strip()[2:]
+            else:
+                buffer += '\\footnote{%s}' % subcontent.strip()
         elif ournode.tag == 'sub':
             buffer += '$_{\\text{%s}}$' % subcontent.strip()
         elif ournode.tag == 'strong':
@@ -631,20 +634,7 @@ class FootnotePreprocessor:
         self.footnotes = footnotes
 
     def run(self, lines):
-        lines = self._handleFootnoteDefinitions(lines)
-
-        # Make a hash of all footnote marks in the text so that we
-        # know in what order they are supposed to appear.  (This
-        # function call doesn't really substitute anything - it's just
-        # a way to get a callback for each occurence.
-
-        text = "\n".join(lines)
-        self.footnotes.SHORT_USE_RE.sub(self.recordFootnoteUse, text)
-        return text.split("\n")
-
-    def recordFootnoteUse(self, match):
-        id = match.group(1)
-        id = id.strip()
+        return self._handleFootnoteDefinitions(lines)
 
     def _handleFootnoteDefinitions(self, lines):
         """Recursively finds and remove all footnote definitions in the lines.
@@ -707,8 +697,9 @@ class FootnotePattern(markdown.inlinepatterns.Pattern):
         try:
             sup.text = self.footnotes.footnotes[id]
         except:
-            pass
+            sup.text = "#"+id
         return sup
+
 
 
 def template(template_fo, latex_to_insert):

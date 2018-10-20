@@ -101,6 +101,11 @@ def unescape_html_entities(text):
     out = out.replace('&lt;', '<')
     out = out.replace('&gt;', '>')
     out = out.replace('&quot;', '"')
+    out = out.replace('&hellip;', '...')
+    out = out.replace('&rsquo;', '\'')
+    out = out.replace('&ldquo;', '``')
+    out = out.replace('&rdquo;', '\'\'')
+    out = out.replace('&lsquo;', '`')
     return out
 
 
@@ -109,7 +114,7 @@ def escape_latex_entities(text):
     out = text
     out = unescape_html_entities(out)
     out = out.replace('%', '\\%')
-    out = out.replace('&', '\\&')
+#    out = out.replace('&', '\\&')
     out = out.replace('#', '\\#')
     out = start_single_quote_re.sub('\g<1>`', out)
     out = start_double_quote_re.sub('\g<1>``', out)
@@ -184,7 +189,7 @@ class LaTeXPostProcessor(markdown.postprocessors.Postprocessor):
         except:
             pass
         try:
-            with open("~/.remarkable/preamble.tex", 'r') as f:
+            with open(os.environ['HOME'] + "/.remarkable/preamble.tex", 'r') as f:
                 PREAMBLE = f.read()
         except:
             pass
@@ -277,6 +282,8 @@ class LaTeXTreeProcessor(markdown.treeprocessors.Treeprocessor):
         # Footnote processor inserts all of the footnote in a sup tag
         elif ournode.tag == 'sup':
             buffer += '\\footnote{%s}' % subcontent.strip()
+        elif ournode.tag == 'sub':
+            buffer += '$_{\\text{%s}}$' % subcontent.strip()
         elif ournode.tag == 'strong':
             buffer += '\\textbf{%s}' % subcontent.strip()
         elif ournode.tag == 'em':
